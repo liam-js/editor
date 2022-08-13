@@ -1,17 +1,27 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+import Liam from '@liam-js/liam';
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+var getParam = function (key) {
+  var params = window.location.search.split('?')[1];
+  if (params) {
+    var arr = params.split('&');
+    for (var i = 0; i < arr.length; i++) {
+      var data = arr[i].split('=');
+      if (data[0] === key) {
+        return data[1];
+      }
+    }
+  }
+};
+
+
+let mode = getParam('mode');
+if(['preview', 'demos'].indexOf(mode) === -1){
+  mode = 'editor';
+}
+import('./blocks/'+mode+'/index').then(function(js){
+  if(mode !=='preview'){
+    Liam.render(js.default, document.querySelector('#root'));
+  }
+})
+

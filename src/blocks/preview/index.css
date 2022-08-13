@@ -1,0 +1,11 @@
+[__loc]:hover {
+  outline: 2px dashed #03d479af;
+  outline-offset: -3px;
+  cursor: default;
+}
+.pe-focus,
+.pe-focus:hover {
+  outline: 3px solid #03d479af;
+  outline-offset: -3px;
+  transform-origin: center center;
+}
