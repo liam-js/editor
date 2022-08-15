@@ -1,18 +1,14 @@
 import Liam from '@liam-js/liam';
-
 import liamHeader from './header';
 import liamFooter from './footer';
 import liamNotice from './notice';
+import SplitPane from 'react-split-pane';
 import './index.css';
 
 const urlInstance = new URL(window.location.href);
 
 Liam.config({
-  wrapText: true,
-  componentMap: {
-    split:
-      'url#https://e.sinaimg.cn/u/8/44/944/6947227956099/react-split-pane.production.min.js',
-  },
+  wrapText: true
 });
 
 // https://github.com/niksy/throttle-debounce
@@ -99,55 +95,52 @@ var getParam = function (key) {
 
 // 要加载的页面 js
 let textUrl = getParam('url');
-textUrl = textUrl?decodeURIComponent(textUrl):'';
+textUrl = textUrl ? decodeURIComponent(textUrl) : '';
 
-window.requirejs.config({
-  context: 'liam',
-  paths: {
-    acorn: '//e.sinaimg.cn/ssfe/liam/js/editor/acorn',
-    acornWalk: '//e.sinaimg.cn/ssfe/unpkg/acorn-walk@8.2.0/dist/walk',
-    AstTypes:
-      '//e.sinaimg.cn/u/0/64/896/6950350070998/ast-types.production.min',
-    escodegen:
-      '//e.sinaimg.cn/u/2/07/971/6950349895395/escodegen.browser.min',
-    vs: '//e.sinaimg.cn/ssfe/unpkg/monaco-editor@0.33.0/min/vs',
-    windowMessageManager:
-      '//e.sinaimg.cn/ssfe/liam/js/editor/windowMessageManager',
-    popupWindowMessageManager:
-      '//e.sinaimg.cn/ssfe/liam/js/editor/popupWindowMessageManager',
-  },
-});
+
 
 const noop = function () {};
 // 获取页面内容，先展示在右侧预览区
 const getContent = function (cb) {
   cb = cb || noop;
   if (textUrl) {
-    window.Liam.require(
-      ['windowMessageManager', 'text!'+textUrl],
-      cb
-    );
+    import('../../js/windowMessageManager').then(function(WindowMessageManager){
+      fetch(textUrl)
+      .then(function (response) {
+        return response.text();
+      }).then(function(text){
+
+        cb(WindowMessageManager, text);
+
+      }).catch(function (err) {
+          console.log(err)
+          cb(WindowMessageManager,'');
+      })
+      
+    });
+    
   } else {
-    window.Liam.require(['windowMessageManager'], cb);
+    import('../../js/windowMessageManager').then(cb);
   }
 };
 
 // 获取编辑器，把代码显示到右侧编辑
 const getEditor = function (cb) {
   cb = cb || noop;
-  window.Liam.require(['vs/editor/editor.main'], cb);
+  import('monaco-editor').then(cb);
+  // window.Liam.require(['vs/editor/editor.main'], cb);
 };
 
 // 最后加载语法分析
 const getAst = function (cb) {
   cb = cb || noop;
-  window.Liam.require(['acorn', 'acornWalk', 'AstTypes', 'escodegen'], cb);
+  import('../../js/ast').then(cb);
 };
 
 // 另外还作为弹窗接收信息
 const getPopup = function (cb) {
   cb = cb || noop;
-  window.Liam.require(['popupWindowMessageManager'], cb);
+  import('../../js/popupWindowMessageManager').then(cb);
 };
 
 console.time('资源');
@@ -168,11 +161,11 @@ const getCodeInfo = (function () {
     if (acorn) {
       cb();
     } else {
-      getAst(function (a, aw, A) {
-        acorn = a;
-        acornWalk = aw;
-        AstTypes = A;
-        escodegen = window.escodegen;
+      getAst(function (ast) {
+        acorn = ast.acorn;
+        acornWalk = ast.acornWalk;
+        AstTypes = ast.astTypes;
+        escodegen = ast.escodegen;
         b = AstTypes.builders;
         cb();
       });
@@ -207,14 +200,15 @@ const getCodeInfo = (function () {
             const element = obj[key];
 
             const prototypeString = Object.prototype.toString.call(element);
-            const node = (function () {
-              let value;
+            let value;
+            let node;
+              
               if (prototypeString === '[object Object]') {
                 // node 类型，不用再转换
                 if (element && element.type) {
-                  return element;
+                  node = element;
                 } else {
-                  return getObjectNode(element);
+                  node = getObjectNode(element);
                 }
               } else {
                 if (prototypeString === '[object Number]') {
@@ -226,9 +220,9 @@ const getCodeInfo = (function () {
                     value = null;
                   }
                 }
-                return b.literal(value);
+                node = b.literal(value);
               }
-            })();
+            
             // 声明一个字段
             props.push(b.property('init', b.identifier(key), node));
           }
@@ -290,7 +284,7 @@ const getCodeInfo = (function () {
       const getNodePropsArray = function (properties, key) {
         // properties 对象的属性
         const nodePropsArray = [];
-        properties.map(function (node1) {
+        properties.forEach(function (node1) {
           // 属性名
           const name = getPropertyKeyName(node1);
           // 属性值
@@ -299,7 +293,7 @@ const getCodeInfo = (function () {
           if ([key].indexOf(name) > -1) {
             // 如果是数组
             if (value.type === 'ArrayExpression') {
-              value.elements.map(function (item) {
+              value.elements.forEach(function (item) {
                 if (item.type === 'Literal') {
                   nodePropsArray.push(item.value);
                 }
@@ -389,7 +383,7 @@ const getCodeInfo = (function () {
           const isNode = isChildNode(properties);
 
           // 是否有children字段
-          properties.map(function (node1) {
+          properties.forEach(function (node1) {
             const name = getPropertyKeyName(node1);
             const value = node1.value;
 
@@ -408,7 +402,7 @@ const getCodeInfo = (function () {
                 nodePropsArray.length > 0
               ) {
                 const propProperties = value.properties;
-                propProperties.map(function (node2) {
+                propProperties.forEach(function (node2) {
                   const name = getPropertyKeyName(node2);
                   // 节点属性
                   if (nodePropsArray.indexOf(name) > -1) {
@@ -453,7 +447,7 @@ const getCodeInfo = (function () {
         if (type === 'ArrayExpression') {
           // 数组
           const elements = arrayOrProperty.elements;
-          elements.map(function (node, index) {
+          elements.forEach(function (node, index) {
             elements[index] = getCodeWithPosition(node, type);
           });
         } else if (type === 'Property') {
@@ -550,9 +544,9 @@ const initWindowMessageManager = (function () {
     if (Ctrl.wm && Ctrl.wm.destory) {
       Ctrl.wm.destory();
     }
-    
-    urlInstance.searchParams.set('mode','preview');
-    const MM1 = (Ctrl.wm = new WindowMessageManager(urlInstance.toString(), {
+
+    urlInstance.pathname = '/editor/preview.html';
+    const MM1 = (Ctrl.wm = new WindowMessageManager.default(urlInstance.toString(), {
       // name 指定打开弹窗的地方，可以是一个 iframe name
       name: name,
       newTag: name === '_blank' ? true : false,
@@ -824,9 +818,7 @@ const initEditor = (function () {
             alert('请选中一个组件，再进行 ' + type + ' component 操作');
             return;
           }
-          if (
-            ['append', 'prepend', 'insert', 'replace'].indexOf(type) !== -1
-          ) {
+          if (['append', 'prepend', 'insert', 'replace'].indexOf(type) !== -1) {
             if (!copyContent) {
               alert('请复制一个组件，再进行 ' + type + ' component 操作');
               return;
@@ -968,44 +960,41 @@ const initEditor = (function () {
     });
 
     // 代码变化
-    const onContentChange = (Ctrl.onContentChange = throttle(
-      200,
-      function () {
-        const value = editor.getValue();
-        const disablePreview = Liam.get('disable_preview');
-        // getCodeInfo 第一次是异步的
-        let isReady = false;
-        getCodeInfo(value, function (info) {
-          isReady = true;
-          debugcodeSource = info.source;
+    const onContentChange = (Ctrl.onContentChange = throttle(200, function () {
+      const value = editor.getValue();
+      const disablePreview = Liam.get('disable_preview');
+      // getCodeInfo 第一次是异步的
+      let isReady = false;
+      getCodeInfo(value, function (info) {
+        isReady = true;
+        debugcodeSource = info.source;
 
-          if (!disablePreview) {
-            Ctrl.wm.post({
-              type: 'change',
-              value: info.code,
-            });
-          }
-
-          // 代码变化，如果有选中组件，它的位置也会变化
-          if (currentRange.length === 4) {
-            onPositionChange({
-              lineNumber: currentRange[0],
-              column: currentRange[1],
-            });
-          }
-        });
-        if (!isReady && !disablePreview) {
+        if (!disablePreview) {
           Ctrl.wm.post({
             type: 'change',
-            value: value,
+            value: info.code,
           });
         }
 
-        Liam.set('project', value);
-
-        Ctrl.content = value;
+        // 代码变化，如果有选中组件，它的位置也会变化
+        if (currentRange.length === 4) {
+          onPositionChange({
+            lineNumber: currentRange[0],
+            column: currentRange[1],
+          });
+        }
+      });
+      if (!isReady && !disablePreview) {
+        Ctrl.wm.post({
+          type: 'change',
+          value: value,
+        });
       }
-    ));
+
+      Liam.set('project', value);
+
+      Ctrl.content = value;
+    }));
 
     onContentChange();
     editorModel.onDidChangeContent(function () {
@@ -1222,8 +1211,7 @@ const previewReady = function () {
   getContent(function (WindowMessageManager, content) {
     content = content || '';
 
-    const iframe = (Ctrl.iframe =
-      document.querySelector('#preview-iframe'));
+    const iframe = (Ctrl.iframe = document.querySelector('#preview-iframe'));
 
     // 初始化消息通信
     initWindowMessageManager(WindowMessageManager);
@@ -1243,7 +1231,8 @@ const previewReady = function () {
   //  作为弹窗接收信息
   if (window.opener) {
     getPopup(function (PopupWindowMessageManager) {
-      var MM2 = new PopupWindowMessageManager(window.opener);
+
+      var MM2 = new PopupWindowMessageManager.default(window.opener);
 
       MM2.on(function (msg) {
         if (msg.type && msg.type === 'edit') {
@@ -1256,7 +1245,7 @@ const previewReady = function () {
 };
 Liam.on('preview-ready', previewReady);
 
-const setContent = function (content) {
+const setContent = throttle(500, function (content) {
   if (Ctrl.editorModel) {
     Ctrl.editorModel.setValue(content);
     setTimeout(function () {
@@ -1265,7 +1254,7 @@ const setContent = function (content) {
   } else {
     Ctrl.content = content;
   }
-};
+});
 Liam.on('file-open', setContent);
 
 Liam.on('pane-pointer-events', function (val) {
@@ -1280,11 +1269,11 @@ window.addEventListener('resize', function () {
   Ctrl.editor && Ctrl.editor.layout();
 });
 
-const liamJson = [
+const LiamJSON = [
   {
     type: 'div',
     props: {
-      key:'header',
+      key: 'header',
       className: 'liam-header',
     },
     children: {
@@ -1303,12 +1292,12 @@ const liamJson = [
         };
       },
       s: 'project',
-    }
+    },
   },
   {
     type: 'div',
     props: {
-      key:'body',
+      key: 'body',
       className: 'liam-body',
     },
     children: [
@@ -1329,23 +1318,20 @@ const liamJson = [
                 if (Liam.get('component-dialog')) {
                   MM1.post('');
                 } else {
-                  window.Liam.require(
-                    ['windowMessageManager'],
-                    function (WindowMessageManager) {
-                      urlInstance.searchParams.set('mode','demos');
-                      MM1 = new WindowMessageManager(urlInstance.toString(), {
-                        name: '',
-                        newTag: false,
-                        widthRatio: 0.7,
-                        heightRatio: 0.7,
-                        placement: 'center-center',
-                        crossOriginAlert: false,
-                        autoFocus: true,
-                      });
-                      Liam.set('component-dialog', MM1);
-                      MM1.post('');
-                    }
-                  );
+                  import('../../js/windowMessageManager').then(function (WindowMessageManager) {
+                    urlInstance.pathname = process.env.PUBLIC_URL+'/demos.html';
+                    MM1 = new WindowMessageManager.default(urlInstance.toString(), {
+                      name: '',
+                      newTag: false,
+                      widthRatio: 0.7,
+                      heightRatio: 0.7,
+                      placement: 'center-center',
+                      crossOriginAlert: false,
+                      autoFocus: true,
+                    });
+                    Liam.set('component-dialog', MM1);
+                    MM1.post('');
+                  });
                 }
                 e.preventDefault();
               },
@@ -1361,15 +1347,13 @@ const liamJson = [
           className: 'liam-body-content',
         },
         children: {
-          type: 'split#SplitPane',
+          type: SplitPane,
           props: {
             split: 'vertical',
             minSize: 50,
             defaultSize:
-              parseInt(
-                localStorage.getItem('LIAM-EDITOR-SPLIT-SIZE'),
-                10
-              ) || '50%',
+              parseInt(localStorage.getItem('LIAM-EDITOR-SPLIT-SIZE'), 10) ||
+              '50%',
             onChange: function (size) {
               Liam.trigger('pane-resize', size);
               localStorage.setItem('LIAM-EDITOR-SPLIT-SIZE', size);
@@ -1412,14 +1396,14 @@ const liamJson = [
   {
     type: 'div',
     props: {
-      key:'footer',
+      key: 'footer',
       className: 'liam-footer',
     },
     children: [
       {
         type: 'span',
         props: {
-          key:'trigger',
+          key: 'trigger',
           className: 'trigger',
           onClick: function () {
             Liam.set(
@@ -1464,10 +1448,10 @@ const liamJson = [
           };
         },
         props: {
-          key: 'name'
+          key: 'name',
         },
         s: ['project-status', 'project-name'],
-      }
+      },
     ],
   },
   {
@@ -1484,5 +1468,4 @@ const liamJson = [
   },
 ];
 
-export default liamJson;
-
+export default LiamJSON;

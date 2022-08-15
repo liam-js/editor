@@ -1,5 +1,5 @@
 import Liam from '@liam-js/liam';
-const liamJson = function(props){
+const LiamJSON = function(props){
       let messages = props.notices.map(function(item){
         return {
           type: 'p',
@@ -35,6 +35,6 @@ const liamJson = function(props){
         ]
       };
     };
-export default liamJson;
+export default LiamJSON;
   
 

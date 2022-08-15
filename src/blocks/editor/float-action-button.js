@@ -68,7 +68,7 @@
               })(
                 ['//e.sinaimg.cn/ssfe/liam/js/editor/windowMessageManager.js'],
                 function (WindowMessageManager) {
-                  const MM2 = new WindowMessageManager('https://dc.sina.com.cn/git/liam/sample/editor.html', {
+                  const MM2 = new WindowMessageManager('https://liam-js.github.io/editor', {
                     name: '_blank',
                     newTag: true,
                     widthRatio: 1,

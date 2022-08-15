@@ -1,40 +1,55 @@
-import * as React from 'react';
+import React from 'react';
 import Liam from '@liam-js/liam';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import {
+  Box,
+  Tabs,
+  Tab,
+  Stack,
+  Autocomplete,
+  TextField,
+  Card,
+  CardContent,
+  Typography,
+  CardActions,
+  Button,
+} from '@mui/material';
+
 import './index.css';
 
-console.log(React,'拿不到');
+const urlInstance = new URL(window.location.href);
+
 Liam.config({
   states: {
     'current-category': 'layout',
   },
-  componentMap: {
-    mui: 'url#https://e.sinaimg.cn/ssfe/unpkg/@mui/material@5.8.3/umd/material-ui.production.min.js',
-  },
 });
-class DemosTab extends React.Component{
-  constructor(props){
+class DemosTab extends React.Component {
+  constructor(props) {
     super(props);
     this.state = {
-      value: 0
-    }
+      value: 0,
+    };
   }
-  render(){
+  render() {
     const props = this.props;
     const data = props.data;
     const handleChange = (event, newValue) => {
-      this.setState({
-        value: newValue
-      },function(){
-        Liam.set('current-category', data.categories[newValue]);
-      });
-      
+      this.setState(
+        {
+          value: newValue,
+        },
+        function () {
+          Liam.set('current-category', data.categories[newValue]);
+        }
+      );
     };
-  
+
     return {
-      type: 'mui#Box',
+      type: Box,
       props: { bgcolor: 'background.paper' },
       children: {
-        type: 'mui#Tabs',
+        type: Tabs,
         props: {
           value: this.state.value,
           onChange: handleChange,
@@ -42,90 +57,80 @@ class DemosTab extends React.Component{
           scrollButtons: 'auto',
           'aria-label': '组件分类',
         },
-        // { type: 'mui#Tab', props: { label: 'Item One' } },
+        // { type: Tab, props: { label: 'Item One' } },
         children: data.categories.map(function (item) {
-          return { type: 'mui#Tab', props: { label: item } };
+          return { type: Tab, props: { label: item } };
         }),
       },
     };
   }
 }
-// const DemosTab =  function (props) {
-//   const data = props.data;
-//   const [value, setValue] = React.useState(0);
 
-  
-// };
-class CopyCodeButton extends React.Component{
-  constructor(props){
+class CopyCodeButton extends React.Component {
+  constructor(props) {
     super(props);
     this.state = {
-      copyButton: '复制代码'
-    }
+      copyButton: '复制代码',
+    };
   }
-  render(){
+  render() {
     const self = this;
     const props = this.props;
     return {
-      type: 'url#https://e.sinaimg.cn/ssfe/unpkg/react-copy-to-clipboard/build/react-copy-to-clipboard.js#CopyToClipboard',
+      type: CopyToClipboard,
       props: {
         text: props.text,
         onCopy: function () {
           self.setState({
-            copyButton: '复制成功'
+            copyButton: '复制成功',
           });
-          if (window.opener) {
-            window.close();
-          } else {
+          // if (window.opener) {
+          //   setTimeout(function(){
+          //     window.close();
+          //   },1e3);
+          // } else {
             setTimeout(function () {
               self.setState({
-                copyButton: '复制代码'
+                copyButton: '复制代码',
               });
             }, 2e3);
-          }
+          // }
         },
       },
       children: [
         {
           type: 'span',
-          children:  this.state.copyButton,
+          children: this.state.copyButton,
         },
       ],
     };
   }
 }
-// const CopyCodeButton = function (props) {
-//   const [copyButton, setCopyButton] =
-//     React.useState('复制代码');
- 
-// };
-const liamJson = [
 
+const LiamJSON = [
   {
     type: 'js',
     props: {
       js: function () {
         const eventId = Liam.on('open-liam-editor', function (text) {
-          Liam.require(
-            ['//e.sinaimg.cn/ssfe/liam/js/editor/windowMessageManager.js'],
-            function (WindowMessageManager) {
-              const MM2 = new WindowMessageManager(
-                'https://dc.sina.com.cn/git/liam/sample/editor.html',
-                {
-                  name: '_blank',
-                  newTag: true,
-                  widthRatio: 1,
-                  heightRatio: 1,
-                  crossOriginAlert: false,
-                  autoFocus: true,
-                }
-              );
-              MM2.post({
-                type: 'edit',
-                data: text,
-              });
-            }
-          );
+          import('../../js/windowMessageManager').then(function (
+            WindowMessageManager
+          ) {
+            urlInstance.pathname = '/editor';
+
+            const MM2 = new WindowMessageManager.default(urlInstance.toString(), {
+              name: '_blank',
+              newTag: true,
+              widthRatio: 1,
+              heightRatio: 1,
+              crossOriginAlert: false,
+              autoFocus: true,
+            });
+            MM2.post({
+              type: 'edit',
+              data: text,
+            });
+          });
         });
 
         return function () {
@@ -134,18 +139,18 @@ const liamJson = [
       },
     },
   },
-  new Promise(function(resolve){
-    import('./data').then(function(data){
+  new Promise(function (resolve) {
+    import('./data').then(function (data) {
       resolve([
         {
           type: function () {
             return {
-              type: 'mui#Stack',
+              type: Stack,
               props: {
                 spacing: 2,
               },
               children: {
-                type: 'mui#Autocomplete',
+                type: Autocomplete,
                 props: {
                   id: 'search-input',
                   freeSolo: true,
@@ -154,7 +159,7 @@ const liamJson = [
                   }),
                   renderInput: (params) => {
                     return {
-                      type: 'mui#TextField',
+                      type: TextField,
                       props: {
                         ...params,
                         label: '搜索组件',
@@ -170,14 +175,14 @@ const liamJson = [
         {
           type: DemosTab,
           props: {
-            data
-          }
+            data,
+          },
         },
 
         {
           type: function () {
             const getIframe = function (id, text, time) {
-              text = text.replace(/`/g, '\\`').replace(/\${/g,'\\${');
+              text = text.replace(/`/g, '\\`').replace(/\${/g, '\\${');
               let srcDoc = `
               <div id="root"></div>
               <script src="https://e.sinaimg.cn/ssfe/lima/js/app.js?v=1.0.6"></script>
@@ -191,7 +196,7 @@ const liamJson = [
                   })
               </script>
               `;
-              
+
               return {
                 type: 'iframe',
                 props: {
@@ -212,14 +217,14 @@ const liamJson = [
                     var lastBodyHeight = 0;
                     var setHeight = function () {
                       var iframeDocument = iframe.contentDocument;
-                      if(!iframeDocument){
+                      if (!iframeDocument) {
                         return;
                       }
                       var bodyHeight =
                         iframeDocument.documentElement.offsetHeight;
 
-                        // 弹窗特殊处理
-                      if(currentCategory === 'alert'){
+                      // 弹窗特殊处理
+                      if (currentCategory === 'alert') {
                         bodyHeight = Math.max(bodyHeight, 500);
                       }
                       if (bodyHeight !== lastBodyHeight) {
@@ -228,7 +233,7 @@ const liamJson = [
                         lastBodyHeight = bodyHeight;
                         count++;
                         if (count < 5) {
-                          setTimeout(setHeight, count*1.5 * 500);
+                          setTimeout(setHeight, count * 1.5 * 500);
                         }
                       }
                     };
@@ -238,79 +243,77 @@ const liamJson = [
               };
             };
             const currentCategory = Liam.get('current-category');
-            
 
             return data.all[currentCategory].map((_, index) => {
-
-              return {
-                type: 'require',
-                props: {
-                  deps: [
-                    'text!demos/' + currentCategory + '/' + _ + '.js',
-                  ],
-                  key: index,
-                },
-                children: function (text) {
-                  return {
-                    type: 'mui#Card',
-                    props: {
-                      sx: { minWidth: 275, margin: '10px', boxShadow: 1, overflow: 'visible' },
-                      variant: 'outlined',
+              urlInstance.pathname = process.env.PUBLIC_URL+'/static/demos/' + currentCategory + '/' + _ + '.js';
+              return fetch( urlInstance.toString() ).then(function (response) {
+                return response.text();
+                
+              }).then(function(text){
+                console.log('没拿到内容',text);
+                return {
+                  type: Card,
+                  props: {
+                    sx: {
+                      minWidth: 275,
+                      margin: '10px',
+                      boxShadow: 1,
+                      overflow: 'visible',
                     },
-                    children: [
-                      {
-                        type: 'mui#CardContent',
-                        children: [
-                          {
-                            type: 'mui#Typography',
+                    variant: 'outlined',
+                  },
+                  children: [
+                    {
+                      type: CardContent,
+                      children: [
+                        {
+                          type: Typography,
+                          props: {
+                            variant: 'h5',
+                          },
+                          children: _,
+                        },
+                        getIframe('j_' + _, text),
+                      ],
+                    },
+
+                    {
+                      type: CardActions,
+                      children: [
+                        {
+                          type: Button,
+                          props: { size: 'small' },
+
+                          children: {
+                            type: CopyCodeButton,
                             props: {
-                              variant: 'h5',
-                            },
-                            children: _,
-                          },
-                          getIframe('j_' + _, text),
-                        ],
-                      },
-
-                      {
-                        type: 'mui#CardActions',
-                        children: [
-                          {
-                            type: 'mui#Button',
-                            props: { size: 'small' },
-
-                            children: {
-                              type: CopyCodeButton,
-                              props: {
-                                text
-                              }
+                              text,
                             },
                           },
-                          {
-                            type: 'mui#Button',
-                            children: {
-                              type: 'span',
-                              props: {
-                                onClick: function () {
-                                  Liam.trigger('open-liam-editor', text);
-                                },
+                        },
+                        {
+                          type: Button,
+                          children: {
+                            type: 'span',
+                            props: {
+                              onClick: function () {
+                                Liam.trigger('open-liam-editor', text);
                               },
-                              children: '编辑代码',
                             },
+                            children: '编辑代码',
                           },
-                        ],
-                      },
-                    ],
-                  };
-                },
-                r: 'children',
-              };
+                        },
+                      ],
+                    },
+                  ],
+                };
+              });
             });
           },
           s: 'current-category',
         },
-      ])
-    })
+      ]);
+    });
   }),
 ];
-export default liamJson;
+export default LiamJSON;

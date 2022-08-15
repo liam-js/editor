@@ -1,5 +1,6 @@
-import Liam from '@liam-js/liam';
+// import '@liam-js/liam/dist/app.production.min';
 import './index.css';
+
 
 let __previewErrors = [];
 window.addEventListener('error', (event) => {
@@ -149,111 +150,116 @@ if (isIframe || isOpener) {
   urls.push('text!' + textUrl);
   urls.push('text!https://e.sinaimg.cn/ssfe/liam/js/editor/float-action-button.js');
 }
+window.t2 = window.liamRequire;
+console.log('执行2');
 
-Liam.require(
-  urls,
-  function (PopupWindowMessageManagerOrSchema, floatButtonText) {
-    // 使用容器包裹文字，方便定位; 但有些文字处理类的组件，文字包裹后会出错，如动画文字 reat-reveal-text
-    Liam.config({
-      wrapText: true,
-    });
-
-    const focusComponent = function (pos, scrollInto) {
-      if (Array.isArray(pos)) {
-        pos = pos.join('-');
-      }
-      const focusElement = document.querySelector('.pe-focus');
-      const currentElement = document.querySelector('[__loc="' + pos + '"]');
-      if (focusElement) {
-        focusElement.classList.remove('pe-focus');
-      }
-      if (currentElement) {
-        currentElement.classList.add('pe-focus');
-        if (scrollInto) {
-          currentElement.scrollIntoView({
-            block: 'center',
-            inline: 'center',
-          });
+window.liamRequire(['liam'],function(Liam){
+  window.liamRequire(
+    urls,
+    function (PopupWindowMessageManagerOrSchema, floatButtonText) {
+      // 使用容器包裹文字，方便定位; 但有些文字处理类的组件，文字包裹后会出错，如动画文字 reat-reveal-text
+      Liam.config({
+        wrapText: true,
+      });
+  
+      const focusComponent = function (pos, scrollInto) {
+        if (Array.isArray(pos)) {
+          pos = pos.join('-');
         }
-      }
-    };
-
-    const render = throttle(200, function (text) {
-      try {
-        let js = Liam.toJs(text?text.trim():'');
-        if (!isIframe || isOpener) {
-          js = [
-            Liam.toJs(floatButtonText, {
-              text: text,
-            }),
-            js,
-          ];
+        const focusElement = document.querySelector('.pe-focus');
+        const currentElement = document.querySelector('[__loc="' + pos + '"]');
+        if (focusElement) {
+          focusElement.classList.remove('pe-focus');
         }
-        Liam.render(js, document.querySelector('#root'));
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    if (!isIframe && !isOpener) {
-      // 单独打开页面，直接渲染
-      render(PopupWindowMessageManagerOrSchema);
-    } else {
-      const sendError = throttle(1000, function () {
-        setTimeout(function () {
-          if (__previewErrors.length !== 0) {
-            MM1.post({
-              type: 'preview-error',
-              value: __previewErrors,
+        if (currentElement) {
+          currentElement.classList.add('pe-focus');
+          if (scrollInto) {
+            currentElement.scrollIntoView({
+              block: 'center',
+              inline: 'center',
             });
-            __previewErrors = [];
           }
-        }, 0);
+        }
+      };
+  
+      const render = throttle(200, function (text) {
+        try {
+          let js = Liam.toJs(text?text.trim():'');
+          if (!isIframe || isOpener) {
+            js = [
+              Liam.toJs(floatButtonText, {
+                text: text,
+              }),
+              js,
+            ];
+          }
+          Liam.render(js, document.querySelector('#root'));
+        } catch (error) {
+          console.log(error);
+        }
       });
-      // 预览页错误
-      window.addEventListener('error', function () {
-        sendError();
-      });
-      window.addEventListener('unhandledrejection', function () {
-        sendError();
-      });
-
-      // iframe形式打开页面，则等待父页面给数据，再渲染
-      var MM1 = new PopupWindowMessageManagerOrSchema(
-        isOpener ? window.opener : window.parent
-      );
-
-      MM1.on(function (data) {
-        if (data.type && data.type === 'change') {
-          render(data.value);
+  
+      if (!isIframe && !isOpener) {
+        // 单独打开页面，直接渲染
+        render(PopupWindowMessageManagerOrSchema);
+      } else {
+        const sendError = throttle(1000, function () {
+          setTimeout(function () {
+            if (__previewErrors.length !== 0) {
+              MM1.post({
+                type: 'preview-error',
+                value: __previewErrors,
+              });
+              __previewErrors = [];
+            }
+          }, 0);
+        });
+        // 预览页错误
+        window.addEventListener('error', function () {
           sendError();
-        }
-
-        if (data.type && data.type === 'cursor') {
-          focusComponent(data.value, true);
-        }
-      });
-      MM1.post({
-        type: 'preview-loaded',
-      });
-
-      // 点击组件高亮
-      document.querySelector('body').addEventListener('click', function (e) {
-        let el = e.target;
-        while (el && el.getAttribute && !el.getAttribute('__loc')) {
-          el = el.parentNode;
-        }
-        if (el && el.getAttribute) {
-          const __loc = el.getAttribute('__loc');
-          if (__loc) {
-            MM1.post({
-              type: 'preview-click',
-              value: __loc,
-            });
-            focusComponent(__loc);
+        });
+        window.addEventListener('unhandledrejection', function () {
+          sendError();
+        });
+  
+        // iframe形式打开页面，则等待父页面给数据，再渲染
+        var MM1 = new PopupWindowMessageManagerOrSchema(
+          isOpener ? window.opener : window.parent
+        );
+  
+        MM1.on(function (data) {
+          if (data.type && data.type === 'change') {
+            render(data.value);
+            sendError();
           }
-        }
-      });
+  
+          if (data.type && data.type === 'cursor') {
+            focusComponent(data.value, true);
+          }
+        });
+        MM1.post({
+          type: 'preview-loaded',
+        });
+  
+        // 点击组件高亮
+        document.querySelector('body').addEventListener('click', function (e) {
+          let el = e.target;
+          while (el && el.getAttribute && !el.getAttribute('__loc')) {
+            el = el.parentNode;
+          }
+          if (el && el.getAttribute) {
+            const __loc = el.getAttribute('__loc');
+            if (__loc) {
+              MM1.post({
+                type: 'preview-click',
+                value: __loc,
+              });
+              focusComponent(__loc);
+            }
+          }
+        });
+      }
     }
-  }
-);
+  );
+});
+

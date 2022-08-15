@@ -1,5 +1,5 @@
 // import Liam from '@liam-js/liam';
-const liamJson = function (props) {
+const LiamJSON = function (props) {
   let statusText = '✓';
   let statusClass = ['status'];
   let nameText = props.name || '未命名';
@@ -27,4 +27,4 @@ const liamJson = function (props) {
   ]
 };
 
-export default liamJson;
+export default LiamJSON;

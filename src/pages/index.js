@@ -2,7 +2,7 @@
 
 import ReactDOM from 'react-dom/client';
 import Liam from '@liam-js/liam';
-import editor from './blocks/editor/index';
+import editor from '../blocks/editor/index';
 
 Liam.config({
   render:function (schema, node) {

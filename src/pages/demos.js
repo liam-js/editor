@@ -1,8 +1,7 @@
 
-
 import ReactDOM from 'react-dom/client';
 import Liam from '@liam-js/liam';
-import editor from './blocks/editor/index';
+import demos from '../blocks/demos/index';
 
 Liam.config({
   render:function (schema, node) {
@@ -11,5 +10,5 @@ Liam.config({
     ReactDOM.createRoot(node).render(RootElement);
   }
 });
-Liam.render(editor, document.querySelector('#root'));
+Liam.render(demos, document.querySelector('#root'));
 

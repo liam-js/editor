@@ -1,6 +1,6 @@
 import Liam from '@liam-js/liam';
 import localforage from 'localforage';
-import FileSaver from './fileSaver';
+import FileSaver from '../../js/fileSaver';
 
 function downloadFile(fileName, content) {
   // 定义触发事件的DOM
@@ -377,9 +377,8 @@ Liam.on('proect-actions',function(type){
   actions[type]();
 });
 
-
-Liam.require(['//e.sinaimg.cn/ssfe/unpkg/mousetrap@1.6.5/mousetrap.min.js'],function(Mousetrap){
-
+import('mousetrap').then(function(js){
+  const Mousetrap = js.default;
   const shortcuts = {
     open: 'mod+o',
     save: 'mod+s',
@@ -393,8 +392,8 @@ Liam.require(['//e.sinaimg.cn/ssfe/unpkg/mousetrap@1.6.5/mousetrap.min.js'],func
     });
     }
   }
-
 });
+
 
 
 window.addEventListener('beforeunload', function (event) {
@@ -408,17 +407,22 @@ window.addEventListener('beforeunload', function (event) {
 
 let firstLoad = true;
 
-const liamJson = function (props) {
+const LiamJSON = function (props) {
   project = props.project;
   onOpen = props.onOpen || function () {};
   onTogglePreviewMode = props.onTogglePreviewMode || function () {};
   if (firstLoad) {
     firstLoad = false;
-    getFromLocal(function (p) {
-      projectSaved = project = p;
-      saveProject(p);
-      onOpen(p);
-    });
+
+    // 作为弹窗时，数据是父级页给的，不用取本地存储数据
+    if(!window.opener){
+      getFromLocal(function (p) {
+        projectSaved = project = p;
+        saveProject(p);
+        onOpen(p);
+      });
+    }
+    
 
     onTogglePreviewMode(getPreviewMode());
   } else {
@@ -457,4 +461,4 @@ const liamJson = function (props) {
   );
   return json;
 };
-export default liamJson;
+export default LiamJSON;
