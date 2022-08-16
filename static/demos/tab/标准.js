@@ -40,9 +40,9 @@
       .tab-a .react-tabs__tab-list li.react-tabs__tab--selected{
           border-bottom-color: green;
           color: green;
-      },
+      }
       .tab-a .react-tabs__tab-list li.react-tabs__tab--disabled{
-          color: #eee;
+          color: #888;
           border-bottom: none;
       }
       `
